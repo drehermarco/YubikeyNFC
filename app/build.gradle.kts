@@ -36,9 +36,12 @@ android {
 }
 
 dependencies {
+    implementation(libs.org.bouncycastle.bcpkix.jdk15to18)
+    implementation(libs.logback.android)
     implementation(libs.yubikit.android)
     implementation(libs.yubikit.piv)
     implementation(libs.yubikit.management)
+    implementation(libs.yubikit.openpgp)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)

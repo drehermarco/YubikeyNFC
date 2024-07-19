@@ -1,5 +1,7 @@
 [versions]
 agp = "8.5.0"
+bouncycastleBcpkixJdk15to18 = "1.78.1"
+logbackAndroid = "3.0.0"
 yubikitVersion = "2.6.0"
 kotlin = "1.9.0"
 coreKtx = "1.13.1"
@@ -17,12 +19,15 @@ junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+logback-android = { module = "com.github.tony19:logback-android", version.ref = "logbackAndroid" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
+org-bouncycastle-bcpkix-jdk15to18 = { module = "org.bouncycastle:bcpkix-jdk15to18", version.ref = "bouncycastleBcpkixJdk15to18" }
 yubikit-android = { module = "com.yubico.yubikit:android", version.ref = "yubikitVersion" }
 yubikit-piv = { module = "com.yubico.yubikit:piv", version.ref = "yubikitVersion" }
 yubikit-management = { module = "com.yubico.yubikit:management", version.ref = "yubikitVersion" }
+yubikit-openpgp = { module = "com.yubico.yubikit:openpgp", version.ref = "yubikitVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
