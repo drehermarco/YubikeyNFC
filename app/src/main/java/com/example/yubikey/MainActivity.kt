@@ -11,7 +11,9 @@ import com.yubico.yubikit.android.YubiKitManager
 import com.yubico.yubikit.android.transport.nfc.NfcConfiguration
 import com.yubico.yubikit.android.transport.nfc.NfcYubiKeyDevice
 import com.yubico.yubikit.core.keys.PublicKeyValues
+import com.yubico.yubikit.core.smartcard.ApduException
 import com.yubico.yubikit.core.smartcard.SmartCardConnection
+import com.yubico.yubikit.openpgp.Kdf.None
 import com.yubico.yubikit.openpgp.Pw
 import com.yubico.yubikit.piv.KeyType
 import com.yubico.yubikit.piv.PinPolicy
@@ -19,11 +21,8 @@ import com.yubico.yubikit.piv.PivSession
 import com.yubico.yubikit.piv.Slot
 import com.yubico.yubikit.piv.TouchPolicy
 import org.bouncycastle.jce.provider.BouncyCastleProvider
-import org.slf4j.LoggerFactory
-import java.nio.charset.StandardCharsets
-import java.security.Key
-import java.security.KeyPair
 import java.security.Security
+import kotlin.properties.Delegates
 
 
 class MainActivity : AppCompatActivity() {
@@ -37,6 +36,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var yubikit: YubiKitManager
     private val nfcConfiguration = NfcConfiguration().timeout(60000)
+    private var hasNfc by Delegates.notNull<Boolean>()
 
     private lateinit var statusTextView: TextView
     private lateinit var progressBar: ProgressBar
@@ -46,6 +46,28 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var keypairAuth: PublicKeyValues
     private lateinit var keypairSign: PublicKeyValues
+
+    private fun verify(piv: PivSession) {
+        piv.verifyPin(DEFAULT_PIN)
+        piv.authenticate(DEFAULT_MGMT)
+    }
+
+    private fun checkForKey(piv: PivSession, slot: Slot): Boolean {
+        try {
+            if (slot == Slot.AUTHENTICATION) {
+                piv.getSlotMetadata(Slot.AUTHENTICATION).publicKeyValues.toPublicKey().toString()
+            } else if (slot == Slot.SIGNATURE) {
+                piv.getSlotMetadata(Slot.SIGNATURE).publicKeyValues.toPublicKey().toString()
+            }
+        } catch (e: ApduException) {
+            return false
+        }
+        return true
+    }
+
+    private fun retrieveKey(piv: PivSession, slot: Slot): PublicKeyValues {
+        return piv.getSlotMetadata(slot).publicKeyValues
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -71,17 +93,31 @@ class MainActivity : AppCompatActivity() {
                     statusTextView.text = "Yubikey found!"
                     progressBar.visibility = ProgressBar.GONE
                     yubikey = device
+                    hasNfc = true
+
                     yubikey.requestConnection(SmartCardConnection::class.java) { result ->
                         conn = result.value
                         piv = PivSession(conn)
-                        piv.verifyPin(DEFAULT_PIN)
-                        piv.authenticate(DEFAULT_MGMT)
-                        keypairAuth = piv.generateKeyValues(Slot.AUTHENTICATION, KeyType.ED25519,
-                                        PinPolicy.DEFAULT, TouchPolicy.DEFAULT)
-                        keypairSign = piv.generateKeyValues(Slot.SIGNATURE, KeyType.ED25519,
-                                        PinPolicy.DEFAULT, TouchPolicy.DEFAULT)
-                        println(keypairAuth)
-                        println(keypairSign)
+
+                        verify(piv)
+
+                        if (!checkForKey(piv, Slot.AUTHENTICATION)) {
+                            piv.generateKeyValues(
+                                Slot.AUTHENTICATION, KeyType.ED25519,
+                                PinPolicy.DEFAULT, TouchPolicy.DEFAULT
+                            )
+                        }
+                        if (!checkForKey(piv, Slot.SIGNATURE)) {
+                            piv.generateKeyValues(
+                                Slot.SIGNATURE, KeyType.ED25519,
+                                PinPolicy.DEFAULT, TouchPolicy.DEFAULT
+                            )
+                        }
+                        keypairAuth = retrieveKey(piv, Slot.AUTHENTICATION)
+                        keypairSign = retrieveKey(piv, Slot.SIGNATURE)
+
+                        println(keypairAuth.toPublicKey().toString())
+                        println(keypairSign.toPublicKey().toString())
                     }
                 }
             }
@@ -89,5 +125,12 @@ class MainActivity : AppCompatActivity() {
             e.printStackTrace()
             println("An error occurred during NFC discovery: ${e.message}")
         }
+    }
+
+    override fun onPause() {
+        if (hasNfc) {
+            yubikit.stopNfcDiscovery(this)
+        }
+        super.onPause()
     }
 }
