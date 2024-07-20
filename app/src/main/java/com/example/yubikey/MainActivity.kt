@@ -13,15 +13,19 @@ import com.yubico.yubikit.android.transport.nfc.NfcYubiKeyDevice
 import com.yubico.yubikit.core.keys.PublicKeyValues
 import com.yubico.yubikit.core.smartcard.ApduException
 import com.yubico.yubikit.core.smartcard.SmartCardConnection
-import com.yubico.yubikit.openpgp.Kdf.None
 import com.yubico.yubikit.openpgp.Pw
 import com.yubico.yubikit.piv.KeyType
 import com.yubico.yubikit.piv.PinPolicy
 import com.yubico.yubikit.piv.PivSession
 import com.yubico.yubikit.piv.Slot
 import com.yubico.yubikit.piv.TouchPolicy
+import com.yubico.yubikit.piv.jca.PivProvider
 import org.bouncycastle.jce.provider.BouncyCastleProvider
+import java.nio.charset.StandardCharsets
+import java.security.KeyStore
+import java.security.PrivateKey
 import java.security.Security
+import java.security.Signature
 import kotlin.properties.Delegates
 
 
@@ -72,9 +76,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        Security.removeProvider("BC")
-        Security.addProvider(BouncyCastleProvider())
-
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
@@ -101,6 +102,12 @@ class MainActivity : AppCompatActivity() {
 
                         verify(piv)
 
+                        Security.removeProvider("BC")
+                        Security.addProvider(BouncyCastleProvider())
+
+                        val pivProvider = PivProvider(piv)
+                        Security.insertProviderAt(pivProvider, 1)
+
                         if (!checkForKey(piv, Slot.AUTHENTICATION)) {
                             piv.generateKeyValues(
                                 Slot.AUTHENTICATION, KeyType.ED25519,
@@ -113,11 +120,28 @@ class MainActivity : AppCompatActivity() {
                                 PinPolicy.DEFAULT, TouchPolicy.DEFAULT
                             )
                         }
+
                         keypairAuth = retrieveKey(piv, Slot.AUTHENTICATION)
                         keypairSign = retrieveKey(piv, Slot.SIGNATURE)
 
                         println(keypairAuth.toPublicKey().toString())
                         println(keypairSign.toPublicKey().toString())
+
+                        val message = "DPIA".toByteArray(StandardCharsets.UTF_8)
+                        val signed = piv.sign(
+                            Slot.SIGNATURE,
+                            KeyType.ED25519,
+                            message, Signature.getInstance("SHA3-256withECDSA")
+                        )
+                        println("Signature: ${signed.joinToString("") { "%02x".format(it) }}")
+
+                        /*
+                        val signature = Signature.getInstance("SHA3-512withECDSA")
+                        signature.initVerify(keypairSign.toPublicKey())
+                        signature.update(message)
+                        val isValid = signature.verify(signed)
+                        println("Signature verified: $isValid")
+                        */
                     }
                 }
             }
