@@ -22,8 +22,6 @@ import com.yubico.yubikit.piv.TouchPolicy
 import com.yubico.yubikit.piv.jca.PivProvider
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.nio.charset.StandardCharsets
-import java.security.KeyStore
-import java.security.PrivateKey
 import java.security.Security
 import java.security.Signature
 import kotlin.properties.Delegates
@@ -66,6 +64,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var signTouchPolicyTextView: TextView
     private lateinit var signPinPolicyTextView: TextView
     private lateinit var signMessageTextView: TextView
+
+    private lateinit var signedString: String
+
 
     private fun verify(piv: PivSession) {
         piv.verifyPin(DEFAULT_PIN)
@@ -137,8 +138,6 @@ class MainActivity : AppCompatActivity() {
 
                         verify(piv)
 
-                        statusTextView.text = "Creating keys..."
-
                         Security.removeProvider("BC")
                         Security.addProvider(BouncyCastleProvider())
 
@@ -167,7 +166,7 @@ class MainActivity : AppCompatActivity() {
                             KeyType.ED25519,
                             message, Signature.getInstance("SHA3-256withECDSA")
                         )
-                        val signedString = "Signature of message ''DPIA'': ${signed.joinToString("") { "%02x".format(it) }}"
+                        signedString = "Signature of message ''DPIA'': ${signed.joinToString("") { "%02x".format(it) }}"
 
                         /* This doesn't work because signing algorithm isn't compatible with verify
                         val signature = Signature.getInstance("SHA3-512withECDSA")
@@ -177,30 +176,34 @@ class MainActivity : AppCompatActivity() {
                         println("Signature verified: $isValid")
                         */
 
-                        statusTextView.text = "Metadata: "
+                        //statusTextView.text = "Metadata: "
                         //Configuration Metadata
-                        managementKeyTypeTextView.text = piv.managementKeyMetadata.keyType.toString()
-                        managementTouchPolicyTextView.text = piv.managementKeyMetadata.touchPolicy.toString()
-                        pinTotalAttemptsTextView.text = piv.pinMetadata.totalAttempts.toString()
-                        pinAttemptsRemainingTextView.text = piv.pinMetadata.attemptsRemaining.toString()
-                        pukTotalAttemptsTextView.text = piv.pukMetadata.totalAttempts.toString()
-                        pukAttemptsRemainingTextView.text = piv.pukMetadata.attemptsRemaining.toString()
+                        println(piv.managementKeyMetadata.keyType.toString())
+                        println(piv.managementKeyMetadata.touchPolicy.toString())
+                        println(piv.pinMetadata.totalAttempts.toString())
+                        println(piv.pinMetadata.attemptsRemaining.toString())
+                        println(piv.pukMetadata.totalAttempts.toString())
+                        println(piv.pukMetadata.attemptsRemaining.toString())
 
                         //Authentication Slot Metadata
-                        authPublicKeyTextView.text = piv.getSlotMetadata(Slot.AUTHENTICATION).publicKeyValues.toPublicKey().toString()
-                        authKeyTypeTextView.text = piv.getSlotMetadata(Slot.AUTHENTICATION).keyType.toString()
-                        authTouchPolicyTextView.text = piv.getSlotMetadata(Slot.AUTHENTICATION).touchPolicy.toString()
-                        authPinPolicyTextView.text = piv.getSlotMetadata(Slot.AUTHENTICATION).pinPolicy.toString()
+                        println(piv.getSlotMetadata(Slot.AUTHENTICATION).publicKeyValues.toPublicKey().toString())
+                        println(piv.getSlotMetadata(Slot.AUTHENTICATION).keyType.toString())
+                        println(piv.getSlotMetadata(Slot.AUTHENTICATION).touchPolicy.toString())
+                        println(piv.getSlotMetadata(Slot.AUTHENTICATION).pinPolicy.toString())
 
                         //Signature Slot Metadata
-                        signPublicKeyTextView.text = piv.getSlotMetadata(Slot.SIGNATURE).publicKeyValues.toPublicKey().toString()
-                        signKeyTypeTextView.text = piv.getSlotMetadata(Slot.SIGNATURE).keyType.toString()
-                        signTouchPolicyTextView.text = piv.getSlotMetadata(Slot.SIGNATURE).touchPolicy.toString()
-                        signPinPolicyTextView.text = piv.getSlotMetadata(Slot.SIGNATURE).pinPolicy.toString()
-                        signMessageTextView.text = signedString
+                        println(piv.getSlotMetadata(Slot.SIGNATURE).publicKeyValues.toPublicKey().toString())
+                        println(piv.getSlotMetadata(Slot.SIGNATURE).keyType.toString())
+                        println(piv.getSlotMetadata(Slot.SIGNATURE).touchPolicy.toString())
+                        println(piv.getSlotMetadata(Slot.SIGNATURE).pinPolicy.toString())
+                        println(signedString)
+
+
                     }
                 }
             }
+
+
         } catch (e: Exception) {
             e.printStackTrace()
             println("An error occurred during NFC discovery: ${e.message}")
