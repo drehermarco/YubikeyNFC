@@ -51,6 +51,21 @@ class MainActivity : AppCompatActivity() {
     private lateinit var keypairAuth: PublicKeyValues
     private lateinit var keypairSign: PublicKeyValues
 
+    private lateinit var managementKeyTypeTextView: TextView
+    private lateinit var managementTouchPolicyTextView: TextView
+    private lateinit var pinTotalAttemptsTextView: TextView
+    private lateinit var pinAttemptsRemainingTextView: TextView
+    private lateinit var pukTotalAttemptsTextView: TextView
+    private lateinit var pukAttemptsRemainingTextView: TextView
+    private lateinit var authPublicKeyTextView: TextView
+    private lateinit var authKeyTypeTextView: TextView
+    private lateinit var authTouchPolicyTextView: TextView
+    private lateinit var authPinPolicyTextView: TextView
+    private lateinit var signPublicKeyTextView: TextView
+    private lateinit var signKeyTypeTextView: TextView
+    private lateinit var signTouchPolicyTextView: TextView
+    private lateinit var signPinPolicyTextView: TextView
+
     private fun verify(piv: PivSession) {
         piv.verifyPin(DEFAULT_PIN)
         piv.authenticate(DEFAULT_MGMT)
@@ -73,12 +88,13 @@ class MainActivity : AppCompatActivity() {
         return piv.getSlotMetadata(slot).publicKeyValues
     }
 
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.tv_status)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
@@ -86,6 +102,21 @@ class MainActivity : AppCompatActivity() {
 
         statusTextView = findViewById(R.id.tv_status)
         progressBar = findViewById(R.id.progress_bar)
+
+        managementKeyTypeTextView = findViewById(R.id.tv_management_key_type)
+        managementTouchPolicyTextView = findViewById(R.id.tv_management_touch_policy)
+        pinTotalAttemptsTextView = findViewById(R.id.tv_pin_total_attempts)
+        pinAttemptsRemainingTextView = findViewById(R.id.tv_pin_attempts_remaining)
+        pukTotalAttemptsTextView = findViewById(R.id.tv_puk_total_attempts)
+        pukAttemptsRemainingTextView = findViewById(R.id.tv_puk_attempts_remaining)
+        authPublicKeyTextView = findViewById(R.id.tv_auth_public_key)
+        authKeyTypeTextView = findViewById(R.id.tv_auth_key_type)
+        authTouchPolicyTextView = findViewById(R.id.tv_auth_touch_policy)
+        authPinPolicyTextView = findViewById(R.id.tv_auth_pin_policy)
+        signPublicKeyTextView = findViewById(R.id.tv_sign_public_key)
+        signKeyTypeTextView = findViewById(R.id.tv_sign_key_type)
+        signTouchPolicyTextView = findViewById(R.id.tv_sign_touch_policy)
+        signPinPolicyTextView = findViewById(R.id.tv_sign_pin_policy)
 
         yubikit = YubiKitManager(this)
         try {
@@ -101,6 +132,8 @@ class MainActivity : AppCompatActivity() {
                         piv = PivSession(conn)
 
                         verify(piv)
+
+                        statusTextView.text = "Creating keys..."
 
                         Security.removeProvider("BC")
                         Security.addProvider(BouncyCastleProvider())
@@ -124,24 +157,42 @@ class MainActivity : AppCompatActivity() {
                         keypairAuth = retrieveKey(piv, Slot.AUTHENTICATION)
                         keypairSign = retrieveKey(piv, Slot.SIGNATURE)
 
-                        println(keypairAuth.toPublicKey().toString())
-                        println(keypairSign.toPublicKey().toString())
-
                         val message = "DPIA".toByteArray(StandardCharsets.UTF_8)
                         val signed = piv.sign(
                             Slot.SIGNATURE,
                             KeyType.ED25519,
                             message, Signature.getInstance("SHA3-256withECDSA")
                         )
-                        println("Signature: ${signed.joinToString("") { "%02x".format(it) }}")
+                        println("Signature of message ''DPIA'': ${signed.joinToString("") { "%02x".format(it) }}")
 
-                        /*
+                        /* This doesn't work because signing algorithm isn't compatible with verify
                         val signature = Signature.getInstance("SHA3-512withECDSA")
                         signature.initVerify(keypairSign.toPublicKey())
                         signature.update(message)
                         val isValid = signature.verify(signed)
                         println("Signature verified: $isValid")
                         */
+
+                        //Configuration Metadata
+                        managementKeyTypeTextView.text = piv.managementKeyMetadata.keyType.toString()
+                        managementTouchPolicyTextView.text = piv.managementKeyMetadata.touchPolicy.toString()
+                        pinTotalAttemptsTextView.text = piv.pinMetadata.totalAttempts.toString()
+                        pinAttemptsRemainingTextView.text = piv.pinMetadata.attemptsRemaining.toString()
+                        pukTotalAttemptsTextView.text = piv.pukMetadata.totalAttempts.toString()
+                        pukAttemptsRemainingTextView.text = piv.pukMetadata.attemptsRemaining.toString()
+
+                        //Authentication Slot Metadata
+                        authPublicKeyTextView.text = piv.getSlotMetadata(Slot.AUTHENTICATION).publicKeyValues.toPublicKey().toString()
+                        authKeyTypeTextView.text = piv.getSlotMetadata(Slot.AUTHENTICATION).keyType.toString()
+                        authTouchPolicyTextView.text = piv.getSlotMetadata(Slot.AUTHENTICATION).touchPolicy.toString()
+                        authPinPolicyTextView.text = piv.getSlotMetadata(Slot.AUTHENTICATION).pinPolicy.toString()
+
+                        //Signature Slot Metadata
+                        signPublicKeyTextView.text = piv.getSlotMetadata(Slot.SIGNATURE).publicKeyValues.toPublicKey().toString()
+                        signKeyTypeTextView.text = piv.getSlotMetadata(Slot.SIGNATURE).keyType.toString()
+                        signTouchPolicyTextView.text = piv.getSlotMetadata(Slot.SIGNATURE).touchPolicy.toString()
+                        signPinPolicyTextView.text = piv.getSlotMetadata(Slot.SIGNATURE).pinPolicy.toString()
+
                     }
                 }
             }
