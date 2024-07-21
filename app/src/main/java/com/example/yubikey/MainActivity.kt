@@ -49,7 +49,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var keypairAuth: PublicKeyValues
     private lateinit var keypairSign: PublicKeyValues
 
-    private lateinit var managementKeyTypeTextView: TextView
+    lateinit var managementKeyTypeTextView: TextView
     private lateinit var managementTouchPolicyTextView: TextView
     private lateinit var pinTotalAttemptsTextView: TextView
     private lateinit var pinAttemptsRemainingTextView: TextView
@@ -67,6 +67,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var signedString: String
 
+    val metadataInfo = StringBuilder()
 
     private fun verify(piv: PivSession) {
         piv.verifyPin(DEFAULT_PIN)
@@ -105,30 +106,12 @@ class MainActivity : AppCompatActivity() {
         progressBar = findViewById(R.id.progress_bar)
         statusTextView = findViewById(R.id.tv_status)
 
-        managementKeyTypeTextView = findViewById(R.id.tv_management_key_type)
-        managementTouchPolicyTextView = findViewById(R.id.tv_management_touch_policy)
-        pinTotalAttemptsTextView = findViewById(R.id.tv_pin_total_attempts)
-        pinAttemptsRemainingTextView = findViewById(R.id.tv_pin_attempts_remaining)
-        pukTotalAttemptsTextView = findViewById(R.id.tv_puk_total_attempts)
-        pukAttemptsRemainingTextView = findViewById(R.id.tv_puk_attempts_remaining)
-        authPublicKeyTextView = findViewById(R.id.tv_auth_public_key)
-        authKeyTypeTextView = findViewById(R.id.tv_auth_key_type)
-        authTouchPolicyTextView = findViewById(R.id.tv_auth_touch_policy)
-        authPinPolicyTextView = findViewById(R.id.tv_auth_pin_policy)
-        signPublicKeyTextView = findViewById(R.id.tv_sign_public_key)
-        signKeyTypeTextView = findViewById(R.id.tv_sign_key_type)
-        signTouchPolicyTextView = findViewById(R.id.tv_sign_touch_policy)
-        signPinPolicyTextView = findViewById(R.id.tv_sign_pin_policy)
-        signMessageTextView = findViewById(R.id.tv_sign_message)
-
         statusTextView.text = "Please connect your Yubikey"
 
         yubikit = YubiKitManager(this)
         try {
             yubikit.startNfcDiscovery(nfcConfiguration, this) { device ->
                 runOnUiThread {
-                    statusTextView.text = "Yubikey found!"
-                    progressBar.visibility = ProgressBar.GONE
                     yubikey = device
                     hasNfc = true
 
@@ -141,8 +124,6 @@ class MainActivity : AppCompatActivity() {
                         Security.removeProvider("BC")
                         Security.addProvider(BouncyCastleProvider())
 
-                        val pivProvider = PivProvider(piv)
-                        Security.insertProviderAt(pivProvider, 1)
 
                         if (!checkForKey(piv, Slot.AUTHENTICATION)) {
                             piv.generateKeyValues(
@@ -176,31 +157,39 @@ class MainActivity : AppCompatActivity() {
                         println("Signature verified: $isValid")
                         */
 
-                        //statusTextView.text = "Metadata: "
-                        //Configuration Metadata
-                        println(piv.managementKeyMetadata.keyType.toString())
-                        println(piv.managementKeyMetadata.touchPolicy.toString())
-                        println(piv.pinMetadata.totalAttempts.toString())
-                        println(piv.pinMetadata.attemptsRemaining.toString())
-                        println(piv.pukMetadata.totalAttempts.toString())
-                        println(piv.pukMetadata.attemptsRemaining.toString())
+                        //Append Strings
+                        metadataInfo.append("Management Key Metadata:\n")
+                        metadataInfo.append("Key Type: ${piv.managementKeyMetadata.keyType}\n")
+                        metadataInfo.append("Touch Policy: ${piv.managementKeyMetadata.touchPolicy}\n")
+                        metadataInfo.append("\nPIN Metadata:\n")
+                        metadataInfo.append("Total Attempts: ${piv.pinMetadata.totalAttempts}\n")
+                        metadataInfo.append("Attempts Remaining: ${piv.pinMetadata.attemptsRemaining}\n")
+                        metadataInfo.append("\nPUK Metadata:\n")
+                        metadataInfo.append("Total Attempts: ${piv.pukMetadata.totalAttempts}\n")
+                        metadataInfo.append("Attempts Remaining: ${piv.pukMetadata.attemptsRemaining}\n")
+                        metadataInfo.append("\nAuthentication Slot Metadata:\n")
+                        metadataInfo.append("Public Key: ${piv.getSlotMetadata(Slot.AUTHENTICATION).publicKeyValues.toPublicKey()}\n")
+                        metadataInfo.append("Key Type: ${piv.getSlotMetadata(Slot.AUTHENTICATION).keyType}\n")
+                        metadataInfo.append("Touch Policy: ${piv.getSlotMetadata(Slot.AUTHENTICATION).touchPolicy}\n")
+                        metadataInfo.append("Pin Policy: ${piv.getSlotMetadata(Slot.AUTHENTICATION).pinPolicy}\n")
+                        metadataInfo.append("\nSignature Slot Metadata:\n")
+                        metadataInfo.append("Public Key: ${piv.getSlotMetadata(Slot.SIGNATURE).publicKeyValues.toPublicKey()}\n")
+                        metadataInfo.append("Key Type: ${piv.getSlotMetadata(Slot.SIGNATURE).keyType}\n")
+                        metadataInfo.append("Touch Policy: ${piv.getSlotMetadata(Slot.SIGNATURE).touchPolicy}\n")
+                        metadataInfo.append("Pin Policy: ${piv.getSlotMetadata(Slot.SIGNATURE).pinPolicy}\n")
+                        metadataInfo.append("\n$signedString")
 
-                        //Authentication Slot Metadata
-                        println(piv.getSlotMetadata(Slot.AUTHENTICATION).publicKeyValues.toPublicKey().toString())
-                        println(piv.getSlotMetadata(Slot.AUTHENTICATION).keyType.toString())
-                        println(piv.getSlotMetadata(Slot.AUTHENTICATION).touchPolicy.toString())
-                        println(piv.getSlotMetadata(Slot.AUTHENTICATION).pinPolicy.toString())
 
-                        //Signature Slot Metadata
-                        println(piv.getSlotMetadata(Slot.SIGNATURE).publicKeyValues.toPublicKey().toString())
-                        println(piv.getSlotMetadata(Slot.SIGNATURE).keyType.toString())
-                        println(piv.getSlotMetadata(Slot.SIGNATURE).touchPolicy.toString())
-                        println(piv.getSlotMetadata(Slot.SIGNATURE).pinPolicy.toString())
-                        println(signedString)
+                        //conn.close()
+
 
 
                     }
+                    Thread.sleep(2000)
+                    progressBar.visibility = ProgressBar.GONE
+                    statusTextView.text = metadataInfo
                 }
+
             }
 
 
