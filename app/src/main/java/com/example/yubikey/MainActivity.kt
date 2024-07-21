@@ -19,7 +19,6 @@ import com.yubico.yubikit.piv.PinPolicy
 import com.yubico.yubikit.piv.PivSession
 import com.yubico.yubikit.piv.Slot
 import com.yubico.yubikit.piv.TouchPolicy
-import com.yubico.yubikit.piv.jca.PivProvider
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.nio.charset.StandardCharsets
 import java.security.Security
@@ -29,7 +28,6 @@ import kotlin.properties.Delegates
 
 class MainActivity : AppCompatActivity() {
     private val DEFAULT_PIN: CharArray = Pw.DEFAULT_USER_PIN
-    private val DEFAULT_ADMIN: CharArray = Pw.DEFAULT_ADMIN_PIN
     private val DEFAULT_MGMT = byteArrayOf(
         0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
         0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
@@ -48,22 +46,6 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var keypairAuth: PublicKeyValues
     private lateinit var keypairSign: PublicKeyValues
-
-    lateinit var managementKeyTypeTextView: TextView
-    private lateinit var managementTouchPolicyTextView: TextView
-    private lateinit var pinTotalAttemptsTextView: TextView
-    private lateinit var pinAttemptsRemainingTextView: TextView
-    private lateinit var pukTotalAttemptsTextView: TextView
-    private lateinit var pukAttemptsRemainingTextView: TextView
-    private lateinit var authPublicKeyTextView: TextView
-    private lateinit var authKeyTypeTextView: TextView
-    private lateinit var authTouchPolicyTextView: TextView
-    private lateinit var authPinPolicyTextView: TextView
-    private lateinit var signPublicKeyTextView: TextView
-    private lateinit var signKeyTypeTextView: TextView
-    private lateinit var signTouchPolicyTextView: TextView
-    private lateinit var signPinPolicyTextView: TextView
-    private lateinit var signMessageTextView: TextView
 
     private lateinit var signedString: String
 
@@ -157,7 +139,7 @@ class MainActivity : AppCompatActivity() {
                         println("Signature verified: $isValid")
                         */
 
-                        //Append Strings
+                        //Append metadata Strings
                         metadataInfo.append("Management Key Metadata:\n")
                         metadataInfo.append("Key Type: ${piv.managementKeyMetadata.keyType}\n")
                         metadataInfo.append("Touch Policy: ${piv.managementKeyMetadata.touchPolicy}\n")
@@ -178,11 +160,6 @@ class MainActivity : AppCompatActivity() {
                         metadataInfo.append("Touch Policy: ${piv.getSlotMetadata(Slot.SIGNATURE).touchPolicy}\n")
                         metadataInfo.append("Pin Policy: ${piv.getSlotMetadata(Slot.SIGNATURE).pinPolicy}\n")
                         metadataInfo.append("\n$signedString")
-
-
-                        //conn.close()
-
-
 
                     }
                     Thread.sleep(2000)
