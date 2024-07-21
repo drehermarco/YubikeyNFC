@@ -177,7 +177,6 @@ class MainActivity : AppCompatActivity() {
                         println("Signature verified: $isValid")
                         */
 
-
                         statusTextView.text = "Metadata: "
                         //Configuration Metadata
                         managementKeyTypeTextView.text = piv.managementKeyMetadata.keyType.toString()
