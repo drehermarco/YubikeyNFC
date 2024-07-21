@@ -65,6 +65,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var signKeyTypeTextView: TextView
     private lateinit var signTouchPolicyTextView: TextView
     private lateinit var signPinPolicyTextView: TextView
+    private lateinit var signMessageTextView: TextView
 
     private fun verify(piv: PivSession) {
         piv.verifyPin(DEFAULT_PIN)
@@ -100,8 +101,8 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        statusTextView = findViewById(R.id.tv_status)
         progressBar = findViewById(R.id.progress_bar)
+        statusTextView = findViewById(R.id.tv_status)
 
         managementKeyTypeTextView = findViewById(R.id.tv_management_key_type)
         managementTouchPolicyTextView = findViewById(R.id.tv_management_touch_policy)
@@ -117,6 +118,9 @@ class MainActivity : AppCompatActivity() {
         signKeyTypeTextView = findViewById(R.id.tv_sign_key_type)
         signTouchPolicyTextView = findViewById(R.id.tv_sign_touch_policy)
         signPinPolicyTextView = findViewById(R.id.tv_sign_pin_policy)
+        signMessageTextView = findViewById(R.id.tv_sign_message)
+
+        statusTextView.text = "Please connect your Yubikey"
 
         yubikit = YubiKitManager(this)
         try {
@@ -163,7 +167,7 @@ class MainActivity : AppCompatActivity() {
                             KeyType.ED25519,
                             message, Signature.getInstance("SHA3-256withECDSA")
                         )
-                        println("Signature of message ''DPIA'': ${signed.joinToString("") { "%02x".format(it) }}")
+                        val signedString = "Signature of message ''DPIA'': ${signed.joinToString("") { "%02x".format(it) }}"
 
                         /* This doesn't work because signing algorithm isn't compatible with verify
                         val signature = Signature.getInstance("SHA3-512withECDSA")
@@ -173,6 +177,8 @@ class MainActivity : AppCompatActivity() {
                         println("Signature verified: $isValid")
                         */
 
+
+                        statusTextView.text = "Metadata: "
                         //Configuration Metadata
                         managementKeyTypeTextView.text = piv.managementKeyMetadata.keyType.toString()
                         managementTouchPolicyTextView.text = piv.managementKeyMetadata.touchPolicy.toString()
@@ -192,7 +198,7 @@ class MainActivity : AppCompatActivity() {
                         signKeyTypeTextView.text = piv.getSlotMetadata(Slot.SIGNATURE).keyType.toString()
                         signTouchPolicyTextView.text = piv.getSlotMetadata(Slot.SIGNATURE).touchPolicy.toString()
                         signPinPolicyTextView.text = piv.getSlotMetadata(Slot.SIGNATURE).pinPolicy.toString()
-
+                        signMessageTextView.text = signedString
                     }
                 }
             }
